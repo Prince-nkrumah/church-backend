@@ -1,0 +1,15 @@
+{
+  "development": {
+    "username": "neondb_owner",
+    "password": "npg_BVkX0pNZxw8W",
+    "database": "neondb",
+    "host": "ep-lively-lab-adaji1hy-pooler.c-2.us-east-1.aws.neon.tech",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  }
+}

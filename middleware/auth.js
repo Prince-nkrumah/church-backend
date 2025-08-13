@@ -1,8 +1,11 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
+// 🔐 Protect middleware
 exports.protect = async (req, res, next) => {
   let token;
+
+  console.log('Authorization header:', req.headers.authorization);
 
   if (
     req.headers.authorization &&
@@ -12,6 +15,7 @@ exports.protect = async (req, res, next) => {
   }
 
   if (!token) {
+    console.log('No token found');
     return res.status(401).json({
       success: false,
       error: 'Not authorized to access this route',
@@ -19,11 +23,13 @@ exports.protect = async (req, res, next) => {
   }
 
   try {
+    console.log('JWT_SECRET used for verification:', process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Decoded token:', decoded);
 
     const user = await User.findByPk(decoded.id);
     if (!user) {
+      console.log('User not found for ID:', decoded.id);
       return res.status(401).json({ success: false, error: 'User not found' });
     }
 
@@ -40,7 +46,7 @@ exports.protect = async (req, res, next) => {
   }
 };
 
-// ✅ Add this to fix the error
+// ✅ ADD THIS
 exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

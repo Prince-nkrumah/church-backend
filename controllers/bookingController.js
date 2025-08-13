@@ -1,5 +1,6 @@
-const { Booking, Event } = require('../models');
+const { Booking, Event, User, Notification } = require('../models');
 const { sendBookingConfirmation } = require('../utils/emailSender');
+const notifyAdmins = require('../utils/notifyAdmins');
 const { Op } = require('sequelize');
 
 
@@ -27,7 +28,6 @@ exports.createBooking = async (req, res, next) => {
       attendeePhone: attendee.phone,
       attendeeLocation: attendee.location,
       totalTickets,
-      userId: req.user?.id || null
     });
 
     // Send confirmation email
@@ -45,6 +45,11 @@ exports.createBooking = async (req, res, next) => {
       totalTickets: booking.totalTickets
     });
 
+    await notifyAdmins({
+      message: `New booking for event: ${event.title}`,
+      type: 'booking'
+    });
+
     res.status(201).json({
       success: true,
       data: booking
@@ -53,6 +58,8 @@ exports.createBooking = async (req, res, next) => {
     next(error);
   }
 };
+
+
 
 exports.getBookings = async (req, res, next) => {
   try {
@@ -64,8 +71,6 @@ exports.getBookings = async (req, res, next) => {
       page = 1,
       limit = 10
     } = req.query;
-
-    console.log('📥 Query Params:', req.query);
 
     const where = {};
 
@@ -85,24 +90,42 @@ exports.getBookings = async (req, res, next) => {
       ];
     }
 
-    const bookings = await Booking.findAll({
+    const bookings = await Booking.findAndCountAll({
       where,
       include: [
         {
           model: Event,
           attributes: ['title', 'date', 'time', 'location'],
         },
+        {
+          model: User,
+          attributes: ['name', 'email']
+        }
       ],
       order: [['bookingDate', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit),
     });
 
+    // ✅ Map raw bookings to formatted output
+    const formatted = bookings.rows.map(booking => ({
+      id: booking.id,
+      eventId: booking.eventId,
+      eventTitle: booking.eventTitle,
+      eventDate: booking.eventDate,
+      fullName: booking.attendeeName,
+      email: booking.attendeeEmail,
+      status: booking.status,
+      bookingDate: booking.bookingDate
+    }));
+
     res.status(200).json({
       success: true,
-      count: bookings.length,
-      data: bookings,
+      count: bookings.count,
+      data: formatted
     });
+
+
   } catch (error) {
     console.error('❌ Error fetching bookings:', error);
     next(error);

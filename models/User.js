@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
+
 module.exports = (sequelize) => {
   const User = sequelize.define('User', {
     id: {
@@ -27,7 +28,15 @@ module.exports = (sequelize) => {
     role: {
       type: DataTypes.ENUM('admin', 'user'),
       defaultValue: 'user'
-    }
+    },
+    resetPasswordToken: {
+  type: DataTypes.STRING,
+  allowNull: true
+},
+resetPasswordExpire: {
+  type: DataTypes.DATE,
+  allowNull: true
+}
   }, {
     hooks: {
       beforeSave: async (user) => {
@@ -39,8 +48,15 @@ module.exports = (sequelize) => {
     }
   });
 
-  User.prototype.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+  User.associate = (models) => {
+  User.hasMany(models.Notification, {
+    foreignKey: 'userId',
+    as: 'notifications',
+  });
+};
+
+  User.prototype.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
   };
   return User;
 };

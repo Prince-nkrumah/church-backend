@@ -49,7 +49,15 @@ module.exports = (sequelize) => {
     bookingDate: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
-    }
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'confirmed',
+      validate: {
+        isIn: [['confirmed', 'cancelled', 'pending']]
+      }
+    },
   });
 
   return Booking;
