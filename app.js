@@ -17,8 +17,8 @@ sequelize.authenticate()
   .catch(err => console.error('❌ Database connection error:', err));
 
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
-  setHeaders: (res, path) => {
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Or restrict to your frontend origin
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 }));
