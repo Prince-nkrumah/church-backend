@@ -16,22 +16,18 @@ sequelize.authenticate()
   .then(() => console.log('✅ Database connected'))
   .catch(err => console.error('❌ Database connection error:', err));
 
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
-  setHeaders: (res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  }
-}));
-
 app.set('trust proxy', 1);
 
-// ✅ CORS setup
+// =======================
+// ✅ Middleware
+// =======================
+
+// CORS (before anything else)
 app.use(cors({
   origin: [
     'http://127.0.0.1:5500',
-    'http://cosmic-dashboard-gamma.vercel.app', 
-    'http://localhost:5173', 
-    'http://127.0.0.1:5501', 
+    'http://localhost:5173',
+    'http://127.0.0.1:5501',
     'http://localhost:5500',
     'https://ccgic.vercel.app',
     'https://cosmicchristglories.vercel.app'
@@ -39,34 +35,49 @@ app.use(cors({
   credentials: true
 }));
 
-
-
-// ✅ Security headers & logging
+// Security headers & logging
 app.use(helmet());
 app.use(morgan('dev'));
 
-// ✅ Body parsers
+// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// =======================
+// ✅ Static files with CORS headers
+// =======================
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
+// =======================
+// ✅ Rate Limiting (only for auth routes)
+// =======================
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100
+});
+app.use('/api/auth', authLimiter);
+
+// =======================
+// ✅ Routes
+// =======================
 app.get('/', (req, res) => {
   res.send('✅ Welcome to the Church API!');
 });
 
-// ✅ Rate limiting
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-}));
-
-// ✅ API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/notifications', require('./routes/notifications'));
 
+// =======================
 // ✅ Error handler
+// =======================
 app.use(errorHandler);
 
 module.exports = app;
